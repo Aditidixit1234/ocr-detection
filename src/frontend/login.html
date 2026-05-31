@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login - OCR Studio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+
+  <!-- Firebase v8 -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: #0a0a1a;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      color: white;
+      overflow: hidden;
+    }
+
+    /* ── Animated Orbs ── */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .orb1 {
+      width: 500px; height: 500px;
+      background: #6366f1;
+      top: -150px; left: -150px;
+      animation: orbFloat1 8s ease-in-out infinite;
+    }
+    .orb2 {
+      width: 400px; height: 400px;
+      background: #a855f7;
+      bottom: -100px; right: -100px;
+      animation: orbFloat2 10s ease-in-out infinite;
+    }
+    .orb3 {
+      width: 300px; height: 300px;
+      background: #ec4899;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      animation: orbFloat3 12s ease-in-out infinite;
+    }
+
+    @keyframes orbFloat1 {
+      0%,100% { transform: translate(0,0) scale(1); }
+      50%      { transform: translate(30px,-30px) scale(1.05); }
+    }
+    @keyframes orbFloat2 {
+      0%,100% { transform: translate(0,0) scale(1); }
+      50%      { transform: translate(-20px,20px) scale(1.04); }
+    }
+    @keyframes orbFloat3 {
+      0%,100% { transform: translate(-50%,-50%) scale(1); }
+      50%      { transform: translate(-50%,-55%) scale(1.06); }
+    }
+
+    /* ── Grid Background ── */
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background-image:
+        linear-gradient(rgba(99,102,241,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99,102,241,0.06) 1px, transparent 1px);
+      background-size: 50px 50px;
+      pointer-events: none;
+    }
+
+    /* ── Card ── */
+    .card {
+      position: relative;
+      z-index: 1;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(99,102,241,0.25);
+      padding: 48px 40px;
+      border-radius: 24px;
+      text-align: center;
+      backdrop-filter: blur(20px);
+      width: 380px;
+      animation: cardIn 0.6s cubic-bezier(0.16,1,0.3,1) forwards;
+      box-shadow:
+        0 0 0 1px rgba(99,102,241,0.1),
+        0 20px 60px rgba(0,0,0,0.5),
+        0 0 80px rgba(99,102,241,0.1);
+    }
+
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(30px) scale(0.96); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* ── Logo ── */
+    .logo-wrap {
+      width: 64px; height: 64px;
+      margin: 0 auto 20px;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 0 30px rgba(99,102,241,0.5);
+      animation: logoPulse 3s ease-in-out infinite;
+    }
+
+    @keyframes logoPulse {
+      0%,100% { box-shadow: 0 0 30px rgba(99,102,241,0.4); }
+      50%      { box-shadow: 0 0 50px rgba(168,85,247,0.7); }
+    }
+
+    /* ── Title ── */
+    .card h1 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #fff 0%, #c4b5fd 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+
+    .card .subtitle {
+      font-size: 0.85rem;
+      color: rgba(196,181,253,0.55);
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+
+    /* ── Divider ── */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(255,255,255,0.08);
+    }
+    .divider span {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.25);
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── Google Button ── */
+    .google-btn {
+      width: 100%;
+      padding: 14px 20px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.06);
+      color: white;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+    }
+
+    .google-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(168,85,247,0.15));
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .google-btn:hover {
+      border-color: rgba(168,85,247,0.5);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(99,102,241,0.3);
+    }
+
+    .google-btn:hover::before { opacity: 1; }
+    .google-btn:active { transform: translateY(0); }
+
+    .google-btn svg {
+      position: relative;
+      z-index: 1;
+      flex-shrink: 0;
+    }
+
+    .google-btn span {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Loading state ── */
+    .google-btn.loading {
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    .google-btn.loading .btn-text::after {
+      content: '';
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-left: 10px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Features row ── */
+    .features-row {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 32px;
+      flex-wrap: wrap;
+    }
+
+    .feat-pill {
+      font-size: 0.68rem;
+      font-family: 'DM Mono', monospace;
+      color: rgba(196,181,253,0.45);
+      background: rgba(99,102,241,0.08);
+      border: 1px solid rgba(99,102,241,0.15);
+      border-radius: 20px;
+      padding: 4px 12px;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Footer text ── */
+    .footer-txt {
+      margin-top: 24px;
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.18);
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── Error box ── */
+    .error-box {
+      display: none;
+      margin-top: 16px;
+      padding: 12px 16px;
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 10px;
+      color: #f87171;
+      font-size: 0.82rem;
+    }
+
+    /* ── Shimmer line ── */
+    .shimmer-line {
+      height: 2px;
+      border-radius: 2px;
+      background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899, #6366f1);
+      background-size: 200% 100%;
+      animation: shimmer 3s linear infinite;
+      margin-bottom: 36px;
+      opacity: 0.6;
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Background -->
+  <div class="grid-bg"></div>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+
+  <!-- Card -->
+  <div class="card">
+
+    <!-- Logo -->
+    <div class="logo-wrap">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+        <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="#fff" stroke-width="1.6"/>
+        <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="#fff" stroke-width="1.6"/>
+        <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="#fff" stroke-width="1.6"/>
+        <path d="M14 17.5h6M17 14.5v6" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+    </div>
+
+    <h1>OCR Studio</h1>
+    <p class="subtitle">AI-Powered Text Extraction</p>
+
+    <!-- Shimmer line -->
+    <div class="shimmer-line"></div>
+
+    <div class="divider"><span>SIGN IN TO CONTINUE</span></div>
+
+    <!-- Google Button -->
+    <button class="google-btn" id="google-login">
+      <!-- Google SVG Icon -->
+      <svg width="20" height="20" viewBox="0 0 48 48">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        <path fill="none" d="M0 0h48v48H0z"/>
+      </svg>
+      <span class="btn-text">Continue with Google</span>
+    </button>
+
+    <!-- Error -->
+    <div class="error-box" id="error-box">
+      ⚠ Login failed. Please try again.
+    </div>
+
+    <!-- Feature pills -->
+    <div class="features-row">
+      <span class="feat-pill">⚡ Hybrid OCR</span>
+      <span class="feat-pill">🧠 AI Correction</span>
+      <span class="feat-pill">🔐 Secure</span>
+    </div>
+
+    <p class="footer-txt">© 2026 OCR Studio — Powered by AI</p>
+
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBWzXYAxhfqnqKg3nmZ3oVD1TuQUVhVGyI",
+      authDomain: "ocr-project-425ca.firebaseapp.com",
+      projectId: "ocr-project-425ca",
+      storageBucket: "ocr-project-425ca.firebasestorage.app",
+      messagingSenderId: "1007566785712",
+      appId: "1:1007566785712:web:ed8cecbe936d3e7b7e7f75",
+      measurementId: "G-HD3TDH448V"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    const loginBtn = document.getElementById("google-login");
+    const errorBox = document.getElementById("error-box");
+
+    loginBtn.addEventListener("click", function () {
+      loginBtn.classList.add("loading");
+      loginBtn.querySelector('.btn-text').textContent = "Signing in";
+      errorBox.style.display = "none";
+
+      const provider = new firebase.auth.GoogleAuthProvider();
+
+      auth.signInWithPopup(provider)
+        .then(function (result) {
+          const user = result.user;
+          localStorage.setItem("user", JSON.stringify({
+            uid:   user.uid,
+            name:  user.displayName,
+            email: user.email,
+            photo: user.photoURL
+          }));
+          window.location.href = "index.html";
+        })
+        .catch(function (error) {
+          console.error(error);
+          loginBtn.classList.remove("loading");
+          loginBtn.querySelector('.btn-text').textContent = "Continue with Google";
+          errorBox.style.display = "block";
+        });
+    });
+  </script>
+
+</body>
+</html>

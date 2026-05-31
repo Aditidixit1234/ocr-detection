@@ -1,0 +1,698 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI OCR Studio</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: #0a0a1a;
+      color: white;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Orbs ── */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(90px);
+      opacity: 0.3;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .orb1 { width:500px;height:500px;background:#6366f1;top:-150px;left:-150px;animation:o1 9s ease-in-out infinite; }
+    .orb2 { width:400px;height:400px;background:#a855f7;top:30%;right:-120px;animation:o2 11s ease-in-out infinite; }
+    .orb3 { width:350px;height:350px;background:#ec4899;bottom:-100px;left:30%;animation:o3 13s ease-in-out infinite; }
+
+    @keyframes o1 { 0%,100%{transform:translate(0,0)}50%{transform:translate(30px,-40px)} }
+    @keyframes o2 { 0%,100%{transform:translate(0,0)}50%{transform:translate(-25px,30px)} }
+    @keyframes o3 { 0%,100%{transform:translate(0,0)}50%{transform:translate(20px,-20px)} }
+
+    /* ── Grid ── */
+    .grid-bg {
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(rgba(99,102,241,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99,102,241,0.05) 1px, transparent 1px);
+      background-size: 52px 52px;
+      pointer-events: none;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 40px;
+      background: rgba(10,10,26,0.7);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(99,102,241,0.12);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+    }
+
+    .nav-logo span {
+      font-size: 1.1rem;
+      font-weight: 600;
+      background: linear-gradient(135deg, #fff, #c4b5fd);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .nav-user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85rem;
+      color: rgba(196,181,253,0.7);
+    }
+
+    .nav-user img {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: 2px solid rgba(168,85,247,0.4);
+    }
+
+    .logout-btn {
+      padding: 8px 18px;
+      border-radius: 20px;
+      border: 1px solid rgba(168,85,247,0.35);
+      background: rgba(168,85,247,0.1);
+      color: #c4b5fd;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .logout-btn:hover {
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      border-color: transparent;
+      color: white;
+      transform: translateY(-1px);
+    }
+
+    /* ── Main ── */
+    main {
+      position: relative;
+      z-index: 1;
+      padding-top: 100px;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      text-align: center;
+      padding: 80px 24px 60px;
+      max-width: 780px;
+      margin: 0 auto;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(99,102,241,0.12);
+      border: 1px solid rgba(99,102,241,0.25);
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 0.75rem;
+      font-family: 'DM Mono', monospace;
+      color: #a78bfa;
+      letter-spacing: 0.05em;
+      margin-bottom: 28px;
+    }
+
+    .hero-badge::before {
+      content: '';
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #6fcf97;
+      animation: blink 2s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%,100%{opacity:1} 50%{opacity:0.3}
+    }
+
+    .hero h1 {
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 50%, #a855f7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 20px;
+    }
+
+    .hero p {
+      font-size: 1.1rem;
+      color: rgba(196,181,253,0.55);
+      line-height: 1.7;
+      max-width: 520px;
+      margin: 0 auto 40px;
+    }
+
+    .hero-btns {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      padding: 14px 32px;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      border: none;
+      border-radius: 14px;
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: 'Outfit', sans-serif;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 30px rgba(99,102,241,0.4);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-primary::before {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 100%; height: 100%;
+      background: linear-gradient(120deg, transparent, rgba(255,255,255,0.25), transparent);
+      transition: 0.5s;
+    }
+
+    .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 14px 40px rgba(99,102,241,0.55); }
+    .btn-primary:hover::before { left: 100%; }
+
+    .btn-secondary {
+      padding: 14px 32px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 14px;
+      color: rgba(255,255,255,0.8);
+      font-size: 1rem;
+      font-weight: 500;
+      font-family: 'Outfit', sans-serif;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .btn-secondary:hover {
+      border-color: rgba(168,85,247,0.5);
+      background: rgba(168,85,247,0.1);
+      transform: translateY(-2px);
+    }
+
+    /* ── Stats ── */
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 48px;
+      padding: 40px 24px;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-num {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #a78bfa, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.35);
+      margin-top: 4px;
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── Features ── */
+    .section {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 60px 24px;
+    }
+
+    .section-title {
+      text-align: center;
+      font-size: 1.8rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #fff, #c4b5fd);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .section-sub {
+      text-align: center;
+      color: rgba(196,181,253,0.45);
+      font-size: 0.9rem;
+      margin-bottom: 48px;
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.04em;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+    }
+
+    .feat-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(99,102,241,0.18);
+      border-radius: 18px;
+      padding: 28px 24px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .feat-card:hover {
+      border-color: rgba(168,85,247,0.4);
+      transform: translateY(-6px);
+      box-shadow: 0 20px 40px rgba(99,102,241,0.15);
+      background: rgba(99,102,241,0.07);
+    }
+
+    .feat-card:hover::before { opacity: 1; }
+
+    .feat-icon {
+      font-size: 2rem;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .feat-card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #e0d7ff;
+    }
+
+    .feat-card p {
+      font-size: 0.84rem;
+      color: rgba(196,181,253,0.45);
+      line-height: 1.6;
+    }
+
+    /* ── How It Works ── */
+    .steps-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0;
+      flex-wrap: wrap;
+      position: relative;
+    }
+
+    .step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      min-width: 120px;
+      position: relative;
+    }
+
+    .step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      top: 28px;
+      right: -20px;
+      width: 40px;
+      height: 2px;
+      background: linear-gradient(90deg, #6366f1, rgba(99,102,241,0.2));
+    }
+
+    .step-num {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(168,85,247,0.2));
+      border: 1px solid rgba(99,102,241,0.35);
+      display: grid;
+      place-items: center;
+      font-size: 1.3rem;
+      transition: all 0.3s ease;
+    }
+
+    .step:hover .step-num {
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      border-color: transparent;
+      transform: scale(1.1);
+      box-shadow: 0 0 20px rgba(99,102,241,0.5);
+    }
+
+    .step-label {
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: rgba(196,181,253,0.6);
+      letter-spacing: 0.04em;
+    }
+
+    /* ── CTA ── */
+    .cta-section {
+      margin: 40px 24px 80px;
+      padding: 60px 40px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(168,85,247,0.08));
+      border: 1px solid rgba(99,102,241,0.2);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      max-width: 860px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .cta-section::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(168,85,247,0.15), transparent 70%);
+    }
+
+    .cta-section h2 {
+      font-size: 2rem;
+      font-weight: 700;
+      position: relative;
+      z-index: 1;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #fff, #c4b5fd);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .cta-section p {
+      color: rgba(196,181,253,0.5);
+      margin-bottom: 28px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .cta-badges {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-top: 28px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .cta-badge {
+      padding: 8px 18px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      font-size: 0.82rem;
+      transition: all 0.3s ease;
+    }
+
+    .cta-badge:hover {
+      background: rgba(99,102,241,0.15);
+      border-color: rgba(99,102,241,0.3);
+      transform: translateY(-3px);
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.18);
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.05em;
+      border-top: 1px solid rgba(255,255,255,0.04);
+      position: relative;
+      z-index: 1;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="grid-bg"></div>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-logo">
+      <div class="nav-logo-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="#fff" stroke-width="1.6"/>
+          <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="#fff" stroke-width="1.6"/>
+          <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="#fff" stroke-width="1.6"/>
+          <path d="M14 17.5h6M17 14.5v6" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span>OCR Studio</span>
+    </div>
+    <div class="nav-right">
+      <div class="nav-user" id="nav-user"></div>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+  </nav>
+
+  <main>
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-badge">✦ AI-POWERED OCR PLATFORM</div>
+      <h1>Extract Text From<br/>Any Handwriting</h1>
+      <p>Upload an image and let our hybrid AI extract, clean and summarize handwritten text in seconds.</p>
+      <div class="hero-btns">
+        <button class="btn-primary" onclick="window.location.href='app.html'">
+          🚀 Try Demo
+        </button>
+        <button class="btn-secondary" onclick="window.location.href='app.html'">
+          Upload Image →
+        </button>
+      </div>
+    </section>
+
+    <!-- STATS -->
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-num">95%</div>
+        <div class="stat-label">ACCURACY</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">3x</div>
+        <div class="stat-label">AI MODELS</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">500+</div>
+        <div class="stat-label">USERS</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">80+</div>
+        <div class="stat-label">LANGUAGES</div>
+      </div>
+    </div>
+
+    <!-- FEATURES -->
+    <section class="section">
+      <h2 class="section-title">Everything You Need</h2>
+      <p class="section-sub">THREE MODELS · ONE PLATFORM · INSTANT RESULTS</p>
+      <div class="features-grid">
+        <div class="feat-card">
+          <span class="feat-icon">⚡</span>
+          <h3>Hybrid OCR</h3>
+          <p>Combines EasyOCR, TrOCR and Vision API for maximum accuracy on any handwriting style.</p>
+        </div>
+        <div class="feat-card">
+          <span class="feat-icon">🧠</span>
+          <h3>Neural Correction</h3>
+          <p>AI spell correction fixes OCR errors automatically — no manual editing needed.</p>
+        </div>
+        <div class="feat-card">
+          <span class="feat-icon">📄</span>
+          <h3>Auto Summary</h3>
+          <p>Get a concise one-line summary of what the document says instantly.</p>
+        </div>
+        <div class="feat-card">
+          <span class="feat-icon">📊</span>
+          <h3>Model Comparison</h3>
+          <p>See results from all 3 AI models side by side with confidence scores.</p>
+        </div>
+        <div class="feat-card">
+          <span class="feat-icon">💾</span>
+          <h3>Export Results</h3>
+          <p>Download your extracted text as TXT or PDF with one click.</p>
+        </div>
+        <div class="feat-card">
+          <span class="feat-icon">🔐</span>
+          <h3>Secure & Private</h3>
+          <p>Firebase authentication keeps your data safe and your history private.</p>
+        </div>
+        <!-- 🌍 LANGUAGES -->
+<div class="feat-card">
+  <span class="feat-icon">🌍</span>
+  <h3>20+ Languages</h3>
+  <p>
+    Supports multiple languages using EasyOCR — extract handwritten text across diverse languages effortlessly.
+  </p>
+</div>
+
+<!-- 📊 HISTORY + 🔍 SEARCH -->
+<div class="feat-card">
+<span class="feat-icon">📊🔍</span>
+  <h3>History & Smart Search</h3>
+  <p>
+    Access all past OCR results and instantly find them using intelligent semantic search — even with partial words.
+  </p>
+</div>
+
+<!-- 📦 BATCH + PDF -->
+<div class="feat-card">
+  <span class="feat-icon">📦</span>
+  <h3>Batch & PDF Upload</h3>
+  <p>
+    Upload multiple images or PDFs and process them together with fast, efficient OCR pipelines.
+  </p>
+</div>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="section">
+      <h2 class="section-title">How It Works</h2>
+      <p class="section-sub">FOUR STEPS · SECONDS TO COMPLETE</p>
+      <div class="steps-row">
+        <div class="step">
+          <div class="step-num">📁</div>
+          <div class="step-label">Upload</div>
+        </div>
+        <div class="step">
+          <div class="step-num">🔍</div>
+          <div class="step-label">OCR</div>
+        </div>
+        <div class="step">
+          <div class="step-num">✨</div>
+          <div class="step-label">Clean</div>
+        </div>
+        <div class="step">
+          <div class="step-num">📋</div>
+          <div class="step-label">Summarize</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <div class="cta-section">
+      <h2>Ready to Extract Text Smarter?</h2>
+      <p>Upload your document and let AI handle the rest</p>
+      <button class="btn-primary" onclick="window.location.href='app.html'">
+        Upload Now 🚀
+      </button>
+      <div class="cta-badges">
+        <div class="cta-badge">🌟 Trusted by 500+ users</div>
+        <div class="cta-badge">⚡ 95% accuracy</div>
+        <div class="cta-badge">🔐 Secure processing</div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer>© 2026 OCR Studio — Built with AI</footer>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBWzXYAxhfqnqKg3nmZ3oVD1TuQUVhVGyI",
+      authDomain: "ocr-project-425ca.firebaseapp.com",
+      projectId: "ocr-project-425ca",
+      storageBucket: "ocr-project-425ca.firebasestorage.app",
+      messagingSenderId: "1007566785712",
+      appId: "1:1007566785712:web:ed8cecbe936d3e7b7e7f75"
+    };
+    firebase.initializeApp(firebaseConfig);
+
+    // Auth check
+    const userStr = localStorage.getItem("user");
+    if (!userStr) { window.location.href = "login.html"; }
+
+    // Show user in nav
+    const user = JSON.parse(userStr || '{}');
+    const navUser = document.getElementById('nav-user');
+    if (user && navUser) {
+      navUser.innerHTML = `
+        ${user.photo ? `<img src="${user.photo}" alt="avatar"/>` : ''}
+        <span>${user.name ? user.name.split(' ')[0] : ''}</span>
+      `;
+    }
+
+    function logout() {
+      firebase.auth().signOut().then(() => {
+        localStorage.removeItem("user");
+        window.location.href = "login.html";
+      });
+    }
+  </script>
+
+</body>
+</html>
